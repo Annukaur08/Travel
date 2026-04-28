@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Smart Travel Planner</title>
+<style>
+body {
+    font-family: system-ui, sans-serif;
+    margin:0;
+    background:#eef2f7;
+}
+header {
+    background:#2b6cb0;
+    color:white;
+    padding:15px;
+    font-size:20px;
+}
+.container {
+    padding:15px;
+    max-width:900px;
+    margin:auto;
+}
+.card {
+    background:white;
+    padding:15px;
+    margin:10px 0;
+    border-radius:10px;
+    box-shadow:0 3px 8px rgba(0,0,0,0.1);
+}
+input, textarea, button {
+    width:100%;
+    padding:10px;
+    margin:5px 0;
+    border-radius:6px;
+    border:1px solid #ccc;
+}
+button {
+    background:#2b6cb0;
+    color:white;
+    border:none;
+    cursor:pointer;
+}
+button:hover { background:#1e4e8c; }
+.small-btn {
+    width:auto;
+    padding:5px 10px;
+    margin-top:10px;
+}
+</style>
+</head>
+<body>
+
+<header>🌍 Smart Travel Planner</header>
+
+<div class="container">
+
+<h2>✈️ Flights</h2>
+<input id="flightInput" placeholder="Airline, time, confirmation #">
+<button onclick="addFlight()">Add Flight</button>
+<div id="flightList"></div>
+
+<h2>🏨 Hotels</h2>
+<input id="hotelInput" placeholder="Hotel name + dates">
+<button onclick="addHotel()">Add Hotel</button>
+<div id="hotelList"></div>
+
+<h2>📅 Itinerary</h2>
+<input id="dayInput" placeholder="Day (Day 1)">
+<input id="activityInput" placeholder="Activity">
+<input id="locationInput" placeholder="Location">
+<button onclick="addActivity()">Add Activity</button>
+<div id="itineraryList"></div>
+
+<button onclick="openRoute()">🗺 Open Full Route in Google Maps</button>
+
+<h2>📎 Attach Files</h2>
+<input type="file" id="fileUpload">
+<div id="fileList"></div>
+
+<h2>🤖 AI Trip Planner</h2>
+<textarea id="aiPrompt" placeholder="Example: 4 days in Tokyo, food + culture"></textarea>
+<button onclick="generateAI()">Generate Plan</button>
+<div id="aiResult"></div>
+
+<h2>📧 Share</h2>
+<input id="emailInput" placeholder="Email address">
+<button onclick="sendEmail()">Send Plan</button>
+
+</div>
+
+<script>
+let db = JSON.parse(localStorage.getItem("travelApp")) || {
+    flights: [],
+    hotels: [],
+    itinerary: [],
+    files: []
+};
+
+function save() {
+    localStorage.setItem("travelApp", JSON.stringify(db));
+}
+
+function render() {
+    flightList.innerHTML = db.flights.map((f,i)=>
+        `<div class="card">${f}
+        <button class="small-btn" onclick="remove('flights',${i})">Delete</button></div>`).join("");
+
+    hotelList.innerHTML = db.hotels.map((h,i)=>
+        `<div class="card">${h}
+        <button class="small-btn" onclick="remove('hotels',${i})">Delete</button></div>`).join("");
+
+    itineraryList.innerHTML = db.itinerary.map((a,i)=>
+        `<div class="card">
+        <b>${a.day}</b><br>${a.activity}<br>
+        <a target="_blank" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.location)}">
+        📍 Map
+        </a><br>
+        <button class="small-btn" onclick="remove('itinerary',${i})">Delete</button>
+        </div>`).join("");
+
+    fileList.innerHTML = db.files.map(f =>
+        `<div class="card">${f.name}</div>`).join("");
+}
+
+function remove(type,index){
+    db[type].splice(index,1);
+    save(); render();
+}
+
+function addFlight(){
+    db.flights.push(flightInput.value);
+    flightInput.value="";
+    save(); render();
+}
+
+function addHotel(){
+    db.hotels.push(hotelInput.value);
+    hotelInput.value="";
+    save(); render();
+}
+
+function addActivity(){
+    db.itinerary.push({
+        day: dayInput.value,
+        activity: activityInput.value,
+        location: locationInput.value
+    });
+    save(); render();
+}
+
+function openRoute(){
+    if(db.itinerary.length < 2) return alert("Need at least 2 stops");
+    let base = "https://www.google.com/maps/dir/";
+    let route = db.itinerary.map(i=>encodeURIComponent(i.location)).join("/");
+    window.open(base + route);
+}
+
+fileUpload.onchange = function(){
+    let file = this.files[0];
+    db.files.push({ name:file.name });
+    save(); render();
+}
+
+function generateAI(){
+    aiResult.innerHTML = "⚠️ Connect OpenAI API for real AI itinerary.";
+}
+
+function sendEmail(){
+    let email = emailInput.value;
+
+    let body = `
+Flights:\n${db.flights.join("\n")}
+
+Hotels:\n${db.hotels.join("\n")}
+
+Itinerary:\n${db.itinerary.map(i=>i.day+" - "+i.activity).join("\n")}
+    `;
+
+    window.location.href = `mailto:${email}?subject=Travel Plan&body=${encodeURIComponent(body)}`;
+}
+
+render();
+</script>
+
+</body>
+</html>
